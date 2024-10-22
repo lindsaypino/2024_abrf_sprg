@@ -70,9 +70,9 @@ entries <- bind_rows(
 # Formatting date
 entries$creation_date <- as_date(entries$creation_date)
 
-# Parsing user ID and file names
-entries <- entries %>% 
-  separate(filename, into = c("user", "filename"), sep = "\\/")
+# Extracting user ID and file names
+entries$user <- basename(dirname(entries$filename))
+entries$filename <- basename(entries$filename)
 
 
 ## Plot of data submissions in 2023
@@ -151,19 +151,6 @@ metadata <- metadata %>%
 ## Exporting metadata to further edit
 # rio::export(metadata, file = "../metadata.csv")
 
-
-```
-
-
-```{r}
-#| label: Import metadata
-#| message: false
-
-
-
-metadata <- metadata %>% 
-  arrange(user) %>% 
-  mutate(user = as.character(str_pad(user, width = 2, side = "left", pad = "0")))
 
 ```
 
@@ -472,6 +459,12 @@ pep_formats %>%
 #| label: Dummy charge states
 #| include: false
 #| message: false
+
+pepquant %>% 
+  ggplot(aes(x = factor(charge))) +
+  geom_bar() +
+  scale_y_log10()
+
 
 
 # Adding a dummy charge state for precursors
