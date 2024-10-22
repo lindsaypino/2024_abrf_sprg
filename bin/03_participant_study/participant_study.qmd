@@ -1,0 +1,1122 @@
+---
+title: "sPRG peptide quant data analysis"
+format: beamer
+---
+
+```{r setup}
+ 
+library(tidyverse)
+library(rio)
+library(janitor)
+library(lubridate)
+library(ggsci)
+library(glue)
+library(kableExtra)
+library(tinytable)
+library(pheatmap)
+library(UpSetR)
+
+library(RColorBrewer)
+library(tidytext) # using with PCA
+library(irlba) # for sparsed matrix PCA
+
+
+theme_set(theme_bw(base_size = 18))
+
+
+
+```
+
+
+```{r}
+#| label: data import
+#| warning: false
+#| message: false
+
+
+
+
+# Importing in-silico peptide digest
+in_silico_pep <- import("../../data/02_stability_homogeneity/Combined_proteome_in_silico_digestion.csv")
+
+
+
+```
+
+
+## Submissions
+
+
+```{r}
+#| label: Listing data submissions 
+#| warning: false
+#| message: false
+
+# Data directory
+data_dir <- "../../data/03_participant_study/data/"
+
+
+
+# listing all data submission files
+entries <- bind_rows(
+  list(
+    filename = dir(data_dir, recursive = TRUE),
+    creation_date = file.info(dir(data_dir, recursive = TRUE, full.names = TRUE))$mtime,
+    file_size = file.info(dir(data_dir, recursive = TRUE, full.names = TRUE))$size,
+    file_dir = dir(data_dir, recursive = TRUE, full.names = TRUE)
+  )
+)
+
+# Formatting date
+entries$creation_date <- as_date(entries$creation_date)
+
+# Parsing user ID and file names
+entries <- entries %>% 
+  separate(filename, into = c("user", "filename"), sep = "\\/")
+
+
+## Plot of data submissions in 2023
+ggplot(entries) +
+  geom_point(aes(x = creation_date, y = user)) +
+  scale_x_date(date_breaks = "1 month", 
+                   date_minor_breaks = "1 month",
+                   date_labels = "%b") +
+  labs(title = "Data submissions throughout 2023",
+       x = NULL)
+
+```
+
+
+```{r}
+#| label: Importing metadata
+#| warning: false
+#| message: false
+#| include: false
+#| eval: false
+
+
+entries_metadata <- entries %>% 
+  filter(grepl("Question", filename)) %>% 
+  pull(file_dir)
+
+metadata_list <- lapply(entries_metadata, function(x){
+  
+  data <- read_tsv(x, col_select = c("Question", "Answer")) %>% 
+    clean_names() %>% 
+    mutate(user = basename(dirname(x)),
+           file = basename(x)) 
+
+})
+
+
+
+
+# collating listed dataframes
+metadata <- bind_rows(metadata_list)
+
+
+## Correcting a few missing pieces
+metadata <- metadata %>% 
+  filter(grepl("What ", question))
+
+metadata$answer[metadata$user == "03"] <- substring(metadata$question[metadata$user == "03"], 
+                                                    first = regexpr("\\[", metadata$question[metadata$user == "03"])+1, 
+                                                    last = nchar(metadata$question[metadata$user == "03"])-1)
+
+
+### cleaning up the entries
+
+# removing "_completed"
+metadata$file <- gsub("_completed", "", metadata$file)
+
+# removing question mark
+metadata$question <- substring(metadata$question, first = 1, last = regexpr("\\?", metadata$question) - 1)
+
+# removing brackets
+metadata$answer <- gsub("\\[", "", metadata$answer)
+metadata$answer <- gsub("]", "", metadata$answer)
+
+# adding new column
+# filtering redundant entries 
+metadata <- metadata %>% 
+  mutate(category = case_when(
+    grepl("instrument", question) ~ "Instrument",
+    grepl("software", question) ~ "Software",
+    grepl("quantifying", question) ~ "Quant"
+  )) %>% 
+  filter(grepl("generalQuestion.tsv", file)) %>% 
+  select(user, category, answer) %>% 
+  spread(category, answer)
+
+## Exporting metadata to further edit
+# rio::export(metadata, file = "../metadata.csv")
+
+
+```
+
+
+```{r}
+#| label: Import metadata
+#| message: false
+
+
+
+metadata <- metadata %>% 
+  arrange(user) %>% 
+  mutate(user = as.character(str_pad(user, width = 2, side = "left", pad = "0")))
+
+```
+
+
+
+```{r}
+#| label: Importing data submissions
+#| warning: false
+#| message: false
+
+# Selecting files to import
+entries_pepquant <- entries %>% 
+  filter(grepl("pepQuant", filename),
+         !user %in% c("09")) %>% 
+  pull(file_dir)
+
+# Importing and formatting many files at once
+pepquant_list <- lapply(entries_pepquant, function(x){
+  
+  data <- import(x) %>% 
+    clean_names()
+  
+  if(grepl("^07", basename(x))){
+    
+    names(data) <- c("species", "peptide",
+                     "sample_a_quantity", "sample_b_quantity", "sample_c_quantity")
+  }else{
+    
+    names(data) <- c("peptide", "species", 
+                     "sample_a_quantity", "sample_b_quantity", "sample_c_quantity")
+  }
+  
+  # Converting to numeric
+  data$sample_a_quantity <- as.numeric(data$sample_a_quantity)
+  data$sample_b_quantity <- as.numeric(data$sample_b_quantity)
+  data$sample_c_quantity <- as.numeric(data$sample_c_quantity)
+  
+  # adding file path
+  data$user <- basename(dirname(x))
+  data$file <- basename(x)
+  
+  # # Extracting user ID and file name from file path
+  # data$file <- gsub("../data/", "", data$file)
+  # 
+  # # Parsing User ID and file name
+  # data <- data %>% 
+  # separate(file, into = c("user", "file"), sep = "\\/")
+  
+  # Reordering columns
+  data <- data[,c("user", "file", "peptide", "species", 
+                 "sample_a_quantity", "sample_b_quantity", "sample_c_quantity")]
+  
+  return(data)
+  
+})
+
+# collating listed dataframes
+pepquant <- bind_rows(pepquant_list)
+
+```
+
+
+
+
+```{r}
+#| label: Importing data from User 09
+#| warning: false
+#| message: false
+
+# Data from this file was in a very different format than the one requested. 
+# The data was a triplicate analysis
+# Therefore, the data needs to be formatted to combine with the master dataframe.
+# The 3 replicates will be summarized by taking the mean of the sample abundances. 
+
+
+# Extracting data from Sample 09
+entries_pepquant_09 <- entries %>% 
+  filter(grepl("pepQuant", filename),
+         user %in% c("09")) %>% 
+  pull(file_dir)
+
+# Import data from user 09
+data_09 <- import(entries_pepquant_09) %>% 
+  clean_names() %>% 
+  remove_empty(which = "cols") %>% 
+  rename(peptide = pepide)
+
+# adding file path
+data_09$user <- basename(dirname(entries_pepquant_09))
+data_09$file <- basename(entries_pepquant_09)
+  
+# Converting the columns into a long format
+data_09 <- data_09 %>% 
+  gather(sample, value, contains("sample_"))
+
+# Cleaning up the dataframe
+data_09 <- data_09 %>% 
+  separate(sample, into = c("temp1", "sample", "replicate", "temp2"), sep = "_") %>% 
+  select(-contains("temp")) %>% 
+  mutate(replicate = as.numeric(gsub("r", "", replicate)))
+
+# Summaring peptide abundances using mean(replicates)
+# Cleaning up names
+# Reformatting table to wide format
+data_09 <- data_09 %>% 
+  group_by(peptide, species, user, file, sample) %>% 
+  summarize(value = mean(value)) %>% 
+  ungroup() %>% 
+  mutate(sample = glue("sample_", "{sample}", "_quantity")) %>% 
+  spread(sample, value)
+
+# Reordering columns
+data_09 <- data_09[,c("user", "file", "peptide", "species", 
+                "sample_a_quantity", "sample_b_quantity", "sample_c_quantity")]
+
+```
+
+
+```{r}
+#| label: combining all dataframes
+#| warning: false
+#| message: false
+
+pepquant <- bind_rows(pepquant, data_09)
+
+# Shortening Sample file names.
+pepquant$file <- gsub(".[t,c]sv", "", pepquant$file)
+pepquant$file <- gsub("sPRG_lumos_DIA_", "", pepquant$file)
+
+# Adding sample metadata
+pepquant <- full_join(metadata, pepquant)
+
+```
+
+## Files imported
+
+```{r}
+
+data.frame(File = unique(pepquant$file)) %>% 
+  arrange(File) %>% 
+  mutate(File = str_remove_all(File, ".[t,c]sv")) %>% 
+  kable() %>% 
+  kable_styling("striped", font_size = 8)
+
+
+
+```
+
+
+## Data analysis strategy
+
+The strategy to analyze this data is to first harmonize the peptide, species, and peptide abundances. The following slides shows the various formats for peptide entries and species. 
+
+Next, I will incorporate the in-silico peptide digest used in the stability/homogeneity analysis. This in-silico list is derived by digesting the 3 fasta proteomes and selecting only the peptides unique to a single organism. The sample ratios will be calculated with and without unique peptides.
+
+
+## A mix of species names
+
+```{r}
+
+pepquant %>% 
+  ggplot() +
+  geom_bar(aes(x = species)) +
+  coord_flip()
+
+```
+
+## After reformatting and filtering species
+
+```{r}
+
+# Renaming species
+pepquant <- pepquant %>% 
+  mutate(species = tolower(species),
+         species = str_remove_all(species, "\034"),
+         species = case_when(
+           # Bovine
+           species == "cow" ~ "Bovin",
+           species == "bos taurus" ~ "Bovin",
+           species == "bovin" ~ "Bovin",
+           # Human
+           species == "human" ~ "Human",
+           species == "homo sapiens" ~ "Human",
+           # Trout
+           species == "trout" ~ "Trout",
+           species == "salnm" ~ "Trout",
+           species == "salvelinus namaycush" ~ "Trout",
+           TRUE ~ species
+
+  )) %>% 
+  filter(species %in% c("Bovin", "Trout", "Human"))
+
+pepquant %>% 
+  ggplot() +
+  geom_bar(aes(x = species)) +
+  coord_flip()
+
+```
+
+## Peptide formats: before and after cleaning
+
+
+```{r}
+
+# Creating a temp dataframe to hold the before peptides
+pep_formats <- pepquant %>% 
+  arrange(-(sample_c_quantity / sample_b_quantity / sample_a_quantity)) %>%
+  group_by(user, file) %>% 
+  slice(1) %>% 
+  ungroup() %>% 
+  select(user, file, peptide) %>% 
+  rename(peptides_before_formatting = peptide)
+
+
+# Creating a modified peptide column
+pepquant$peptide_modseq <- pepquant$peptide
+
+# 01 Cleaning up peptide column from 41
+pepquant$peptide <- gsub("\034", "", pepquant$peptide)
+
+# 02 Cleaning up peptide column from 09
+pepquant$peptide <- gsub("\\(UniMod:4)", "", pepquant$peptide)
+
+# 03 Cleaning up peptide column from 11
+pepquant$peptide <- gsub("\\[I{1,}]", "", pepquant$peptide)
+
+# 04 Removing "_"
+pepquant$peptide <- gsub("_", "", pepquant$peptide)
+
+# 05 Removing the (*amino acid*) part of the modification
+pepquant$peptide <- gsub(" \\s*\\([^\\)]+\\)", "", pepquant$peptide)
+
+# 06 Removing the [*modification*]
+pepquant$peptide <- gsub("\\[.*?\\]", "", pepquant$peptide)
+
+# 07 Removing leading period
+pepquant$peptide <- gsub("^\\.", "", pepquant$peptide)
+
+# 08 Splitting the EG.PrecursorId column into 2 columns
+pepquant[c("peptide", "charge")] <- str_split_fixed(pepquant$peptide, pattern = "\\.", n = 2)
+  
+# 09 Converting PrecursorCharge to Numeric
+pepquant$charge <- as.numeric(pepquant$charge)
+
+
+#### Cleaning up the peptide_modseq column
+
+
+# 01 Cleaning up peptide column from 41
+pepquant$peptide_modseq <- gsub("\034", "", pepquant$peptide_modseq)
+
+# 02 Removing Carbamidomethyl mod
+pepquant$peptide_modseq <- gsub("\\(UniMod:4)", "", pepquant$peptide_modseq)
+pepquant$peptide_modseq <- gsub("\\[Carbamidomethyl \\(C\\)\\]", "", pepquant$peptide_modseq)
+pepquant$peptide_modseq <- gsub("\\[Common Fixed:Carbamidomethyl on C\\]", "", pepquant$peptide_modseq)
+
+# 03 Removing the "_"
+pepquant$peptide_modseq <- gsub("_", "", pepquant$peptide_modseq)
+
+# 04 Removing the [amino acid] at leading and ending of peptide sequence
+pepquant$peptide_modseq <- gsub("\\[[A-Z]{1,}]", "", pepquant$peptide_modseq)
+
+# 05 Removing the [-] at leading and ending of peptide sequence
+pepquant$peptide_modseq <- gsub("\\[-]", "", pepquant$peptide_modseq)
+
+# 06 Removing the [-] at leading and ending of peptide sequence
+pepquant$peptide_modseq <- gsub("\\[-[A-Z]]", "", pepquant$peptide_modseq)
+
+# 07 Removing the "." from beginning of sequence
+pepquant$peptide_modseq <- gsub("^\\.", "", pepquant$peptide_modseq)
+
+# 08 Removing the "." from end of sequence
+pepquant$peptide_modseq <- gsub("\\.[1-9]$", "", pepquant$peptide_modseq)
+
+# 04 Removing the "." from end of sequence
+pepquant$peptide_modseq <- gsub("\\.$", "", pepquant$peptide_modseq)
+
+
+# adding the after peptides to the temp dataframe
+pep_formats <- pepquant %>% 
+  arrange(-(sample_c_quantity / sample_b_quantity / sample_a_quantity)) %>%
+  group_by(user, file) %>% 
+  slice(1) %>% 
+  ungroup() %>% 
+  select(user, file, peptide) %>% 
+  rename(peptides_after_formatting = peptide) %>% 
+  full_join(pep_formats, .)
+
+# Need to clean one field
+pep_formats$peptides_before_formatting[15] <- str_remove(pep_formats$peptides_before_formatting[15], "\\W")
+
+pep_formats %>% 
+  distinct(user, .keep_all = TRUE) %>% 
+  select(-file) %>% 
+  clean_names(case = "title") %>% 
+  kable() %>% 
+  kable_styling("striped", font_size = 6) %>% 
+  column_spec(column = 2, width = "1.75in")
+
+```
+
+
+
+
+```{r}
+#| label: Dummy charge states
+#| include: false
+#| message: false
+
+
+# Adding a dummy charge state for precursors
+pepquant <- pepquant %>% 
+  group_by(user, file, peptide, peptide_modseq, species) %>% 
+  mutate(charge = ifelse(is.na(charge), row_number(), charge)) %>% 
+  ungroup()
+
+
+```
+
+
+
+
+## Summarize precursor to peptide
+
+Some of the reported peptides were actually precursors. Should we aggregate precursors to peptides?
+
+For this analysis, I did not perform and aggregation.
+
+
+## Precursors
+
+```{r}
+
+
+precursors <- pepquant %>% 
+  mutate(file = str_remove_all(file, ".[t,c]sv")) %>% 
+  group_by(user, file) %>% 
+  summarize(n = n()) %>% 
+  ungroup() %>% 
+  full_join(., metadata)
+
+
+ggplot(precursors) +
+  geom_bar(aes(x = file, y = n, fill = Software), stat = "identity") +
+  scale_fill_simpsons(na.value = "grey20") +
+  coord_flip() +
+  labs(x = NULL,
+       y = "Precursors")
+
+
+```
+
+
+
+## Modified Peptides
+
+
+```{r}
+
+
+unique_peptides <- pepquant %>% 
+  mutate(file = str_remove_all(file, ".[t,c]sv")) %>% 
+  distinct(user, file, peptide, peptide_modseq, species) %>% 
+  group_by(user, file) %>% 
+  summarize(n = n()) %>% 
+  ungroup() %>% 
+  full_join(., metadata)
+
+
+
+
+ggplot(unique_peptides) +
+  geom_bar(aes(x = file, y = n, fill = Software), stat = "identity") +
+  scale_fill_simpsons(na.value = "grey20") +
+  coord_flip() +
+  labs(x = NULL,
+       y = "Modified peptides")
+
+
+```
+
+
+## Unique Peptides
+
+```{r}
+
+
+unique_peptides <- pepquant %>% 
+  mutate(file = str_remove_all(file, ".[t,c]sv")) %>% 
+  distinct(user, file, peptide, species) %>% 
+  group_by(user, file) %>% 
+  summarize(n = n()) %>% 
+  ungroup() %>% 
+  full_join(., metadata)
+
+
+
+
+ggplot(unique_peptides) +
+  geom_bar(aes(x = file, y = n, fill = Software), stat = "identity") +
+  scale_fill_simpsons(na.value = "grey20") +
+  coord_flip() +
+  theme_bw(base_size = 12) +
+  labs(x = NULL,
+       y = "Unique peptides")
+
+
+```
+
+
+
+
+
+## Peptide overlap across samples
+
+Next, I used unique peptides to determine the overlap between user data. 
+
+
+## Peptide overlap across samples
+
+
+```{r}
+
+
+
+unique_peptides <- pepquant %>% 
+  mutate(file = str_remove_all(file, ".[t,c]sv")) %>% 
+  group_by(user, file) %>% 
+  summarize(n = n()) %>% 
+  ungroup()
+
+upset_data <- pepquant %>% 
+  distinct(file, peptide) %>% 
+  mutate(value = 1)  %>% 
+  unite(feature, peptide, sep = "_") %>% 
+  spread(file, value) %>% 
+  column_to_rownames("feature")
+
+
+upset_data[!is.na(upset_data)] <- 1
+upset_data[is.na(upset_data)] <- 0
+
+upset_data <- upset_data %>% 
+  rownames_to_column("peptide")
+
+
+upset(upset_data, 
+      nsets = 20,
+      order.by = c("freq"),
+      point.size = 2,
+      text.scale = 1.5,
+      show.numbers = FALSE,
+      number.angles = 0
+)
+
+
+
+```
+
+
+
+## Peptide abundance distributions
+
+To make an LFQBench-style figure, the peptide abundance values need to be non log-transformed. This is because when we generate the figure, we will do our own log transformations 
+
+* y-axis will be log(A / C) 
+* x-axis will be log(B)
+
+
+## Original abundance distributions
+
+```{r}
+
+pep_long <- pepquant %>% 
+  gather(sample, value, contains("sample_"))
+
+
+pep_long %>% 
+  filter(value >= 1) %>%
+  ggplot() +
+  geom_density(aes(x = value, group = glue("{sample} {file}"), color = file)) +
+  scale_color_simpsons() +
+  scale_x_log10() +
+  theme(legend.text = element_text(size = 10)) +
+  labs(x = "Abundance")
+
+```
+
+## Transforming values
+
+Most of the data entries show a distribution of non-transformed values. You can see this from the yellow curve and towards the right. However, there are three groups of distributions with some transformation.   
+
+* 06 - Log2-transformed
+* 10 - Scaled quant
+* 41 - Count data
+
+Data from User 06 will be transformed back to a linear scale. 10 and 41 will be left as is. 
+
+```{r}
+
+
+pep_long <- pep_long %>% 
+  mutate(value = ifelse(user %in% c("06"), ifelse(value > 1, 2^value, value), value)) 
+
+
+```
+
+## New abundance distributions
+
+```{r}
+
+
+pep_long %>% 
+  filter(value >= 1) %>% 
+  ggplot() +
+  geom_density(aes(x = value, group = glue("{sample} {file}"), color = file)) +
+  scale_color_simpsons() +
+  scale_x_log10() +
+  theme(legend.text = element_text(size = 10)) +
+  labs(x = "Abundance")
+
+```
+
+
+
+```{r}
+
+
+data_log2 <- pep_long %>%
+  mutate(file = str_remove_all(file, ".[t,c]sv"),
+         sample = str_remove_all(sample, "sample_"),
+         sample = str_remove_all(sample, "_quantity")) 
+
+# Filtering out modified peptides
+data_log2 <- data_log2 %>% 
+  mutate(has_mod = case_when(
+    grepl("\\[", peptide_modseq) ~ TRUE,
+    grepl("\\(", peptide_modseq) ~ TRUE,
+    grepl(" ", peptide_modseq) ~ TRUE,
+    TRUE ~ FALSE)) %>% 
+  filter(has_mod == FALSE)
+
+# Summarizing peptide abundance (max)
+data_log2 <- data_log2 %>% 
+  filter(!is.na(value)) %>% 
+  group_by(user, file, peptide, species, sample) %>% 
+  summarize(abundance = max(value, na.rm = TRUE)) %>% 
+  ungroup()
+
+# Converting to Log2
+data_log2$abundance <- ifelse(data_log2$user %in% c("10", "41"), data_log2$abundance, 
+                             ifelse(data_log2$abundance >= 1, log2(data_log2$abundance), data_log2$abundance))
+
+
+
+```
+
+
+
+## Correlation
+
+Next, I performed a correlation analysis across samples. For this, the values were log2-transformed for all samples except 10 (scaled data) and 41 (count data).
+
+
+## Spearman Correlation 
+
+
+```{r}
+
+
+data_cor <- data_log2 %>% 
+  unite(id, file, sample, sep = ".") %>% 
+  unite(feature, species, peptide, sep = ".") %>% 
+  select(id, feature, abundance) %>% 
+  spread(id, abundance) %>% 
+  column_to_rownames("feature")
+
+
+mat_abundance <- cor(select_if(data_cor, is.numeric), use = "pairwise.complete.obs", method = "spearman")
+
+
+pheatmap(mat_abundance,
+         cellwidth = 6,
+         cellheight = 6,
+         scale = "none",
+         fontsize = 8)
+
+```
+
+
+## Pearson Correlation
+
+```{r}
+
+
+mat_abundance <- cor(select_if(data_cor, is.numeric), use = "pairwise.complete.obs", method = "pearson")
+
+
+pheatmap(mat_abundance,
+         cellwidth = 6,
+         cellheight = 6,
+         scale = "none",
+         fontsize = 8)
+
+
+```
+
+
+## PCA
+
+```{r}
+#| label: Sparse PCA
+#| eval: false
+#| include: false
+
+
+# PCA if using light and heavy proteins
+pca_data_irlba <- data_log2 %>%
+         filter(!is.na(abundance),
+                user != "10") %>% 
+  select(user, file, peptide, species, sample, abundance) %>%
+  unite(id, user, file, sample,  sep = "--") %>% 
+  unite(feature, peptide, species, sep = "--")
+
+set.seed(1)
+# Cast Sparse data
+sparse_data <- pca_data_irlba %>%
+  cast_sparse(row = id, column = feature, value = abundance)
+
+# Irlba PCA
+pca_irlba <- prcomp_irlba(sparse_data, n = 4, retx = TRUE, center = TRUE, scale. = TRUE, maxit = 200)
+
+# dataframe for PCA data
+pca_plot_irlba <- data.frame(id = sparse_data@Dimnames[[1]],
+                             pca_irlba$x) %>%
+  separate(id, c("user", "file", "sample"), sep = "--", remove = TRUE) %>% 
+  full_join(metadata, .)
+
+
+# PC components variation
+percent_variation <- pca_irlba$sdev^2 / sum(pca_irlba$sdev^2)
+
+# PCA plot
+ggplot(pca_plot_irlba, aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = user), size = 4) +
+  scale_color_simpsons() +
+  # scale_color_brewer(palette = "Spectral") +
+  labs(x = paste0("Principal component 1 (",  round(percent_variation[1], digits = 2) * 100, "%)"),
+       y = paste0("Principal component 2 (",  round(percent_variation[2], digits = 2) * 100, "%)")) +
+  # expand_limits(x = c(-40, 40), y = c(-40, 40)) +
+  coord_fixed()
+
+```
+
+```{r}
+
+# PCA if using light and heavy proteins
+pca_data <- data_log2 %>%
+         filter(!is.na(abundance),
+                !user %in% c("10", "41")) %>% 
+  select(user, file, peptide, species, sample, abundance) %>%
+  unite(id, user, file, sample,  sep = "--") %>% 
+  unite(feature, peptide, species, sep = "--") %>% 
+  spread(id, abundance) %>% 
+  column_to_rownames("feature")
+
+
+# Removing missing values from the matrix
+pca_data <- t(na.omit((pca_data)))
+
+
+
+# Running the PCA
+pca_res <- prcomp(pca_data, center = TRUE, scale. = TRUE)
+
+# PC components variation
+percent_variation <- pca_res$sdev^2 / sum(pca_res$sdev^2)
+
+
+# df for plotting PCA
+pca_plot <- data.frame(pca_res$x) %>%
+  rownames_to_column("id") %>%
+  separate(id, c("user", "file", "sample"),
+           sep = "--", remove = TRUE) %>% 
+  inner_join(metadata, .)
+
+
+# PCA plot
+pca_plot %>% 
+  ggplot(aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = file, shape = Quant), size = 5) +
+  scale_color_simpsons() +
+  theme(legend.text = element_text(size = 8)) +
+  labs(title = "Principle Components Analysis",
+       x = paste0("Principal component 1 (",  round(percent_variation[1], digits = 2) * 100, "%)"),
+       y = paste0("Principal component 2 (",  round(percent_variation[2], digits = 2) * 100, "%)")) +
+  coord_fixed()
+
+```
+
+
+## Adding the in-silico peptides 
+
+The 3 fasta proteomes were in-silico digested to peptides. Peptides were labeled according to the originating organism. The in-silico peptides are used to further filter the data
+
+
+
+## How peptides map to organisms using user data
+
+
+```{r}
+#| label: In Silico peptides
+#| message: false
+
+# Reshaping the dataframe to use the new transformed values
+pep_wide <- pep_long %>% 
+  spread(sample, value) %>% 
+  right_join(in_silico_pep, .)
+
+
+ggplot(pep_wide) +
+  geom_bar(aes(x = organism_short, fill = factor(organism_n))) +
+  scale_fill_brewer(palette = "Set1", na.value = "grey40") +
+  coord_flip() +
+  labs(fill = "No. of\norganisms",
+       x = NULL,
+       y = "Peptide count")
+
+```
+
+
+
+
+## Samples - all data
+
+```{r}
+
+# Plot
+pep_wide %>% 
+  filter(sample_a_quantity > 1,
+         sample_b_quantity > 1,
+         sample_c_quantity > 1,
+         !user %in% c("10", "41"), # Removing because it uses scaled quant data
+         species %in% c("Human", "Bovin", "Trout")) %>% 
+  ggplot() +
+  geom_point(aes(x = log2(sample_b_quantity), 
+                 y = log2(sample_a_quantity / sample_c_quantity), 
+                 color = species), 
+             alpha = 0.5) +
+  scale_color_brewer(palette = "Dark2") +
+  facet_wrap(~file, nrow = 3) +
+  labs(x = expression(Log[2]~(B)),
+       y = expression(Log[2]~(A-C)))
+
+
+```
+
+
+## Samples - after filtering
+
+
+```{r}
+
+# Plot
+pep_wide %>% 
+  filter(sample_a_quantity > 1,
+         sample_b_quantity > 1,
+         sample_c_quantity > 1,
+         organism_n == 1,
+         !user %in% c("10", "41"), 
+         species %in% c("Human", "Bovin", "Trout")) %>% 
+  ggplot() +
+  geom_point(aes(x = log2(sample_b_quantity), 
+                 y = log2(sample_a_quantity / sample_c_quantity), 
+                 color = species), 
+             alpha = 0.5) +
+  scale_color_brewer(palette = "Dark2") +
+  facet_wrap(~file, scales = "free_x", nrow = 3) +
+  labs(x = expression(Log[2]~(B)),
+       y = expression(Log[2]~(A-C)))
+
+
+
+```
+
+
+## Sample 10 - all data
+
+```{r}
+#| warning: false
+
+
+pep_wide %>% 
+  filter(user %in% c("10"),
+         species %in% c("Human", "Bovin", "Trout")) %>% 
+  ggplot() +
+  geom_point(aes(x = sample_b_quantity, 
+                 y = log2(sample_a_quantity / sample_c_quantity), 
+                 color = species),
+             alpha = 0.2) +
+  scale_color_brewer(palette = "Dark2") +
+  facet_wrap(~file) +
+  labs(x = "Sample B Abundance",
+       y = expression(Log[2]~(A-C)))
+
+
+
+```
+
+
+
+
+## Sample 10 - after filtering
+
+```{r}
+#| warning: false
+
+pep_wide %>% 
+  filter(user %in% c("10"),
+         organism_n == 1, 
+         species %in% c("Human", "Bovin", "Trout")) %>% 
+  ggplot() +
+  geom_point(aes(x = sample_b_quantity, 
+                 y = log2(sample_a_quantity / sample_c_quantity), 
+                 color = species),
+             alpha = 0.2) +
+  scale_color_brewer(palette = "Dark2") +
+  facet_wrap(~file) +
+  labs(x = "Sample B Abundance",
+       y = expression(Log[2]~(A-C)))
+
+
+
+
+```
+
+
+
+
+
+
+
+
+## Sample 41 - all data
+
+```{r}
+
+
+pep_wide %>% 
+  filter(sample_a_quantity > 0,
+         sample_b_quantity > 0,
+         sample_c_quantity > 0,
+         user %in% c("41"),
+         species %in% c("Human", "Bovin", "Trout")) %>% 
+  ggplot() +
+  geom_point(aes(x = log2(sample_b_quantity), 
+                 y = log2(sample_a_quantity / sample_c_quantity), 
+                 color = species),
+             alpha = 0.2) +
+  scale_color_brewer(palette = "Dark2") +
+  facet_wrap(~file, scales = "free_y") +
+  labs(x = expression(Log[2]~(B)),
+       y = expression(Log[2]~(A-C)))
+
+
+
+```
+
+
+## Sample 41 - after filtering
+
+```{r}
+
+
+pep_wide %>% 
+  filter(sample_a_quantity > 0,
+         sample_b_quantity > 0,
+         sample_c_quantity > 0,
+         organism_n == 1,
+         user %in% c("41"),
+         species %in% c("Human", "Bovin", "Trout")) %>% 
+  ggplot() +
+  geom_point(aes(x = log2(sample_b_quantity), 
+                 y = log2(sample_a_quantity / sample_c_quantity), 
+                 color = species),
+             alpha = 0.2) +
+  scale_color_brewer(palette = "Dark2") +
+  facet_wrap(~file, scales = "free_y") +
+  labs(x = expression(Log[2]~(B)),
+       y = expression(Log[2]~(A-C)))
+
+
+
+
+```
+
+
+## Calculating species ratios
+
+```{r}
+
+ratios_all <- pep_wide %>% 
+  filter(sample_a_quantity > 1,
+         sample_b_quantity > 1,
+         sample_c_quantity > 1) %>% 
+  group_by(user, file, species) %>% 
+  summarize(A_v_B = log2(median(sample_a_quantity / sample_b_quantity, na.rm = TRUE)),
+            B_v_C = log2(median(sample_b_quantity / sample_c_quantity, na.rm = TRUE)),
+            A_v_C = log2(median(sample_a_quantity / sample_c_quantity, na.rm = TRUE))) %>% 
+  ungroup() %>% 
+  mutate(data = "All data")
+
+
+ratios_filter <- pep_wide %>% 
+  filter(organism_n == 1,
+         sample_a_quantity > 1,
+         sample_b_quantity > 1,
+         sample_c_quantity > 1) %>% 
+  group_by(user, file, species) %>% 
+  summarize(A_v_B = log2(median(sample_a_quantity / sample_b_quantity, na.rm = TRUE)),
+            B_v_C = log2(median(sample_b_quantity / sample_c_quantity, na.rm = TRUE)),
+            A_v_C = log2(median(sample_a_quantity / sample_c_quantity, na.rm = TRUE))) %>% 
+  ungroup() %>% 
+  mutate(data = "Filtered data")
+
+
+ratios <- bind_rows(ratios_all, ratios_filter) %>% 
+  gather(ratio, value, contains("_V_"))
+
+
+ratios %>% 
+  mutate(ratio = factor(ratio, levels = c("A_v_B", "B_v_C", "A_v_C"))) %>% 
+  ggplot(aes(x = species, y = value, fill = ratio)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_point(position = position_jitterdodge(), shape = 21) +
+  scale_fill_simpsons() +
+  scale_color_simpsons() +
+  theme_bw(base_size = 18) +
+  # theme(legend.key.size = unit(0.75, 'cm'), #change legend key size
+  #       legend.key.height = unit(0.75, 'cm'), #change legend key height
+  #       legend.key.width = unit(0.75, 'cm'), #change legend key width
+  #       legend.title = element_text(size=14), #change legend title font size
+  #       legend.text = element_text(size=12)) + #change legend text font size
+  guides(color = "none") +
+  facet_wrap(vars(data)) +
+  labs(y = expression(Log[2]~ratio),
+       fill = "Comparison",
+       x = NULL)
+
+# ggsave(filename = "../figures/ratios.svg", width = 8, height = 4, units = "in")
+# ggsave(filename = "../figures/ratios.png", width = 8, height = 4, units = "in")
+
+```
+
+
+
