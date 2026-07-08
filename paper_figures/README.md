@@ -25,8 +25,9 @@ here are descriptive.
 - **`fig3_expected_vs_observed.ipynb`** — from each participant's `*-pepQuant` peptide
   intensities. Produces two figures:
   - `FIG03A_expected_vs_observed_facets` — per-submission observed log2(A/C) vs. abundance.
-  - `FIG03B_recalculated_ratios` — A/B, B/C, A/C box-and-whisker by species (ratio of
-    summed peptide intensity).
+  - `FIG03B_recalculated_ratios` — A/B, B/C, A/C box-and-whisker by species (median of
+    per-peptide ratios, datatype-aware; robust to high-abundance / human-cow-shared
+    peptides that bias a ratio-of-summed-intensities).
 - **`fig4_ratio_density_by_species.ipynb`** — per-species KDE of observed log2(A/C),
   one curve per submission → `FIG04_ratio_density_by_species`.
 - **`supp_reported_sample_ratios.ipynb`** — the ratios each participant *reported* in
