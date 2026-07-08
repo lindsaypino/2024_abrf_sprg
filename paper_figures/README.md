@@ -10,7 +10,7 @@ are schematics or instrument screenshots); those are listed here with their sour
 | Figure | Title | Source | Status |
 |--------|-------|--------|--------|
 | Fig 1 | Sample / experiment design | schematic (drawn) — no notebook | placeholder |
-| Fig 2 | Example "blowup" of expected results | illustrative — no notebook | placeholder |
+| **Fig 2** | Single-dataset example of the Fig 3 analysis (site 42 / Talus) | [`fig2_single_dataset_example.ipynb`](fig2_single_dataset_example.ipynb) → **FIG02** | ✅ done (EncyclopeDIA input; swap to DIANN rerun) |
 | **Fig 3** | Expected vs. observed (recalculated from peptide quant) | [`fig3_expected_vs_observed.ipynb`](fig3_expected_vs_observed.ipynb) → **FIG03A** facets + **FIG03B** recalculated box-whisker | ✅ done |
 | **Fig 4** | Observed log2(A/C) density by species | [`fig4_ratio_density_by_species.ipynb`](fig4_ratio_density_by_species.ipynb) → **FIG04** | ✅ done |
 | Fig 5 | Human vs. bovine (vs. trout) homology challenge | Skyline chromatograms of two SAAV peptides + DIA-NN `pr_matrix.tsv` from 220602 "OG" ABRF data (Talus Exploris 480). Partly code; **pending DIA-NN run** | in progress |
@@ -22,6 +22,12 @@ here are descriptive.
 
 ## Notebooks
 
+- **`fig2_single_dataset_example.ipynb`** — single-dataset LFQbench-style worked example
+  (observed log2 fold-change vs. abundance + per-species boxplots, faceted by A/B, A/C, B/C)
+  for the site-42 run → `FIG02_single_dataset_example`. Species are assigned by in-silico
+  tryptic digest of `Combined_proteomes.fasta` (unique peptides only; map cached to `data/`).
+  Reads the EncyclopeDIA QuantReport for now; repoint `INPUT`/`COLS` at the DIANN
+  `report.pr_matrix.tsv` once the rerun completes.
 - **`fig3_expected_vs_observed.ipynb`** — from each participant's `*-pepQuant` peptide
   intensities. Produces two figures:
   - `FIG03A_expected_vs_observed_facets` — per-submission observed log2(A/C) vs. abundance.
@@ -41,6 +47,7 @@ site-10-QEx and site-09 column fixups). See each notebook's header cell.
 
 ```
 paper_figures/
+  fig2_single_dataset_example.ipynb      -> output/FIG02_*
   fig3_expected_vs_observed.ipynb        -> output/FIG03A_*, output/FIG03B_*
   fig4_ratio_density_by_species.ipynb    -> output/FIG04_*
   supp_reported_sample_ratios.ipynb      -> output/SUPP_*
