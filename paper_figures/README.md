@@ -10,7 +10,7 @@ are schematics or instrument screenshots); those are listed here with their sour
 | Figure | Title | Source | Status |
 |--------|-------|--------|--------|
 | Fig 1 | Sample / experiment design | schematic (drawn) — no notebook | placeholder |
-| **Fig 2** | Single-dataset example of the Fig 3 analysis (site 42 / Talus) | [`fig2_single_dataset_example.ipynb`](fig2_single_dataset_example.ipynb) → **FIG02** | ✅ done (EncyclopeDIA input; swap to DIANN rerun) |
+| **Fig 2** | Single-dataset example of the Fig 3 analysis (site 42 / Talus) | [`fig2_single_dataset_example.ipynb`](fig2_single_dataset_example.ipynb) → **FIG02** | ✅ done (DIA-NN `report.pr_matrix`) |
 | **Fig 3** | Expected vs. observed (recalculated from peptide quant) | [`fig3_expected_vs_observed.ipynb`](fig3_expected_vs_observed.ipynb) → **FIG03A** facets + **FIG03B** recalculated box-whisker | ✅ done |
 | **Fig 4** | Observed log2(A/C) density by species | [`fig4_ratio_density_by_species.ipynb`](fig4_ratio_density_by_species.ipynb) → **FIG04** | ✅ done |
 | Fig 5 | Human vs. bovine (vs. trout) homology challenge | Skyline chromatograms of two SAAV peptides + DIA-NN `pr_matrix.tsv` from 220602 "OG" ABRF data (Talus Exploris 480). Partly code; **pending DIA-NN run** | in progress |
@@ -26,8 +26,8 @@ here are descriptive.
   (observed log2 fold-change vs. abundance + per-species boxplots, faceted by A/B, A/C, B/C)
   for the site-42 run → `FIG02_single_dataset_example`. Species are assigned by in-silico
   tryptic digest of `Combined_proteomes.fasta` (unique peptides only; map cached to `data/`).
-  Reads the EncyclopeDIA QuantReport for now; repoint `INPUT`/`COLS` at the DIANN
-  `report.pr_matrix.tsv` once the rerun completes.
+  Reads the DIA-NN `report.pr_matrix.tsv` (precursor-level, collapsed to peptide by summing
+  across charges). `INPUT`/`COLS` at the top parameterize the input if it changes again.
 - **`fig3_expected_vs_observed.ipynb`** — from each participant's `*-pepQuant` peptide
   intensities. Produces two figures:
   - `FIG03A_expected_vs_observed_facets` — per-submission observed log2(A/C) vs. abundance.
