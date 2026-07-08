@@ -50,3 +50,5 @@ rsconnect/
 
 # stupid windows stuff
 **/desktop.ini
+# paper_figures regenerable intermediates
+paper_figures/data/
