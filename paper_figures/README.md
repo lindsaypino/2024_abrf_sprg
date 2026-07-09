@@ -13,7 +13,7 @@ are schematics or instrument screenshots); those are listed here with their sour
 | **Fig 2** | Single-dataset example of the Fig 3 analysis (site 42 / Talus) | [`fig2_single_dataset_example.ipynb`](fig2_single_dataset_example.ipynb) → **FIG02** | ✅ done (DIA-NN `report.pr_matrix`) |
 | **Fig 3** | Expected vs. observed (recalculated from peptide quant) | [`fig3_expected_vs_observed.ipynb`](fig3_expected_vs_observed.ipynb) → **FIG03A** facets + **FIG03B** recalculated box-whisker | ✅ done |
 | **Fig 4** | Observed log2(A/C) density by species | [`fig4_ratio_density_by_species.ipynb`](fig4_ratio_density_by_species.ipynb) → **FIG04** | ✅ done |
-| **Fig 5** | Human/bovine (vs. trout) homology challenge | [`fig5_homology.ipynb`](fig5_homology.ipynb) → **FIG05** (panels A+B from DIA-NN). Panel C = Skyline SAAV chromatograms (manual instrument screenshot). | ✅ code done (DIA-NN) |
+| **Fig 5** | Human/bovine (vs. trout) homology challenge | [`fig5_homology.ipynb`](fig5_homology.ipynb) → **FIG05** (KDE density of log2(A/C) by homology class, DIA-NN). Companion Skyline SAAV chromatograms = manual instrument screenshot. | ✅ code done (DIA-NN) |
 | Fig 6? | Reanalysis | TBD | placeholder |
 | **Supp** | Summary of participant-reported sample ratios | [`supp_reported_sample_ratios.ipynb`](supp_reported_sample_ratios.ipynb) → **SUPP_reported_ratios** | ✅ done |
 
@@ -37,11 +37,13 @@ here are descriptive.
 - **`fig4_ratio_density_by_species.ipynb`** — per-species KDE of observed log2(A/C),
   one curve per submission → `FIG04_ratio_density_by_species`.
 - **`fig5_homology.ipynb`** — the human/bovine homology challenge → `FIG05_homology_challenge`.
-  Panel A: observed peptides unique vs. shared between species (in-silico digest); human &
-  bovine share ~4.7k peptides vs. ~160/110 shared with trout. Panel B: observed log2(A/C)
-  for human-unique / human+bovine-shared / bovine-unique — shared peptides collapse to
-  ratio ≈1 (human+cow sum to a constant 50 % per sample), demonstrating they can't resolve
-  the two species. (Panel C, Skyline SAAV chromatograms, is added manually.)
+  KDE density of observed log2(A/C) coloured by peptide homology class. Human-unique peaks at
+  +3.9 and bovine-unique at −3.2 (expected), but human+bovine-**shared** peptides collapse to
+  a broad peak at ≈0 (ratio 1) — because human+cow sum to a constant 50 % per sample they
+  can't resolve the two species, biasing protein roll-up. Homology class is sequence-level
+  (in-silico tryptic digest of the combined FASTA, cached to `data/`); DIA-NN's `Protein.Names`
+  is deliberately **not** used for this (it collapses shared peptides onto one protein group
+  and mislabels ~2/3 of them as unique). Skyline SAAV chromatograms added manually.
 - **`supp_reported_sample_ratios.ipynb`** — the ratios each participant *reported* in
   their `*-sampleRatios` file → `SUPP_reported_ratios` (companion to FIG03B).
 
