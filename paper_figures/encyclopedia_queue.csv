@@ -1,0 +1,53 @@
+site,instrument,gui_instrument_setting,path,filename
+01,Bruker timsTOF HT,ToF,D:\2022 Multi-Species Standard Study\01\01_timsht_DIA_A.d,01_timsht_DIA_A.d
+01,Bruker timsTOF HT,ToF,D:\2022 Multi-Species Standard Study\01\01_timsht_DIA_B.d,01_timsht_DIA_B.d
+01,Bruker timsTOF HT,ToF,D:\2022 Multi-Species Standard Study\01\01_timsht_DIA_C.d,01_timsht_DIA_C.d
+02,Thermo Orbitrap Fusion Lumos,Orbi,D:\2022 Multi-Species Standard Study\02\02_rawfiles\02_lumos_DIA_A.raw,02_lumos_DIA_A.raw
+02,Thermo Orbitrap Fusion Lumos,Orbi,D:\2022 Multi-Species Standard Study\02\02_rawfiles\02_lumos_DIA_B.raw,02_lumos_DIA_B.raw
+02,Thermo Orbitrap Fusion Lumos,Orbi,D:\2022 Multi-Species Standard Study\02\02_rawfiles\02_lumos_DIA_C.raw,02_lumos_DIA_C.raw
+03,Thermo Orbitrap Fusion,Orbi,D:\2022 Multi-Species Standard Study\03\03_fusion_DIA_A_20mzwindow.raw,03_fusion_DIA_A_20mzwindow.raw
+03,Thermo Orbitrap Fusion,Orbi,D:\2022 Multi-Species Standard Study\03\03_fusion_DIA_B_20mzwindow.raw,03_fusion_DIA_B_20mzwindow.raw
+03,Thermo Orbitrap Fusion,Orbi,D:\2022 Multi-Species Standard Study\03\03_fusion_DIA_C_20mzwindow.raw,03_fusion_DIA_C_20mzwindow.raw
+04,Bruker timsTOF Pro 2,ToF,D:\2022 Multi-Species Standard Study\04\04_raw_data\04_timspro_dia_A.d,04_timspro_dia_A.d
+04,Bruker timsTOF Pro 2,ToF,D:\2022 Multi-Species Standard Study\04\04_raw_data\04_timspro_dia_B.d,04_timspro_dia_B.d
+04,Bruker timsTOF Pro 2,ToF,D:\2022 Multi-Species Standard Study\04\04_raw_data\04_timspro_dia_C.d,04_timspro_dia_C.d
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_A_R1.raw,006_exploris480_DIA_A_R1.raw
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_A_R2.raw,006_exploris480_DIA_A_R2.raw
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_A_R3.raw,006_exploris480_DIA_A_R3.raw
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_B_R1.raw,006_exploris480_DIA_B_R1.raw
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_B_R2.raw,006_exploris480_DIA_B_R2.raw
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_B_R3.raw,006_exploris480_DIA_B_R3.raw
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_C_R1.raw,006_exploris480_DIA_C_R1.raw
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_C_R2.raw,006_exploris480_DIA_C_R2.raw
+06,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\06\006_exploris480_DIA_C_R3.raw,006_exploris480_DIA_C_R3.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_A_R1.raw,007_qehf_DIA_A_R1.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_A_R1_ShortGrad.raw,007_qehf_DIA_A_R1_ShortGrad.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_A_R2.raw,007_qehf_DIA_A_R2.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_A_R2_ShortGrad.raw,007_qehf_DIA_A_R2_ShortGrad.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_A_R3_ShortGrad.raw,007_qehf_DIA_A_R3_ShortGrad.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_B_R1.raw,007_qehf_DIA_B_R1.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_B_R1_ShortGrad.raw,007_qehf_DIA_B_R1_ShortGrad.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_B_R2.raw,007_qehf_DIA_B_R2.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_B_R2_ShortGrad.raw,007_qehf_DIA_B_R2_ShortGrad.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_B_R3_ShortGrad.raw,007_qehf_DIA_B_R3_ShortGrad.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_C_R1.raw,007_qehf_DIA_C_R1.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_C_R1_ShortGrad.raw,007_qehf_DIA_C_R1_ShortGrad.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_C_R2.raw,007_qehf_DIA_C_R2.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_C_R2_ShortGrad.raw,007_qehf_DIA_C_R2_ShortGrad.raw
+07,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\07\007_qehf_DIA_C_R3_ShortGrad.raw,007_qehf_DIA_C_R3_ShortGrad.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_A_R1.raw,09_qehf_DIA_A_R1.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_A_R2.raw,09_qehf_DIA_A_R2.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_A_R3.raw,09_qehf_DIA_A_R3.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_B_R1.raw,09_qehf_DIA_B_R1.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_B_R2.raw,09_qehf_DIA_B_R2.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_B_R3.raw,09_qehf_DIA_B_R3.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_C_R1.raw,09_qehf_DIA_C_R1.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_C_R2.raw,09_qehf_DIA_C_R2.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_C_R3.raw,09_qehf_DIA_C_R3.raw
+09,Thermo Q Exactive HF,Orbi,D:\2022 Multi-Species Standard Study\09\09_qehf_DIA_C_R4.raw,09_qehf_DIA_C_R4.raw
+14,Thermo Orbitrap Fusion Lumos,Orbi,D:\2022 Multi-Species Standard Study\14\14_lumos_DIA_A_8mzStag390-1010.raw,14_lumos_DIA_A_8mzStag390-1010.raw
+14,Thermo Orbitrap Fusion Lumos,Orbi,D:\2022 Multi-Species Standard Study\14\14_lumos_DIA_B_8mzStag390-1010.raw,14_lumos_DIA_B_8mzStag390-1010.raw
+14,Thermo Orbitrap Fusion Lumos,Orbi,D:\2022 Multi-Species Standard Study\14\14_lumos_DIA_C_8mzStag390-1010.raw,14_lumos_DIA_C_8mzStag390-1010.raw
+42,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\42\42_exploris480_DIA_A.raw,42_exploris480_DIA_A.raw
+42,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\42\42_exploris480_DIA_B.raw,42_exploris480_DIA_B.raw
+42,Thermo Orbitrap Exploris 480,Orbi,D:\2022 Multi-Species Standard Study\42\42_exploris480_DIA_C.raw,42_exploris480_DIA_C.raw
