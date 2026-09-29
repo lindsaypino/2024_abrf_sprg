@@ -52,3 +52,6 @@ rsconnect/
 **/desktop.ini
 # paper_figures regenerable intermediates
 paper_figures/data/
+
+# private manuscript notes (not for the public repo)
+manuscript_notes.md
